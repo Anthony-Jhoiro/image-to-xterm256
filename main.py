@@ -1,10 +1,10 @@
 import sys
 from PIL import Image
 import os
+import math
 
-from color import rgb2short
 
-FONT_RATIO = 0.43
+FONT_RATIO = 0.4
 ASCII_SCALE = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
 ASCII_SCALE_SIZE = len(ASCII_SCALE)
 
@@ -64,15 +64,12 @@ def print_tile(tile: Image):
     color = get_xterm_color(r, g, b)
 
     print("\u001b[38;5;" + str(color) + "m" + char, end="")
-    # exit(0)
-
-
-
+    # print("\u001b[38;5;" + str(color) + "m ", end="")
 
 
 def get_terminal_sizes():
     columns, lines = os.get_terminal_size()
-    return lines, columns, columns * lines
+    return lines, columns, columns / lines
 
 
 
@@ -90,30 +87,63 @@ def main():
 
     terminal_height, terminal_width, terminal_ratio = get_terminal_sizes()
 
-    max_tile_width = image_width // terminal_width
-    max_tile_height = image_height // terminal_height
+    print(terminal_width, terminal_height)
 
-    if max_tile_width > max_tile_height:
-        tile_height = max_tile_height
-        tile_width = max_tile_height * FONT_RATIO
-        vertical_margin = 0
+    max_tile_width = math.floor(image_width / terminal_width)
+    max_tile_height = math.floor(image_height / terminal_height)
+
+    if terminal_width * FONT_RATIO / image_ratio < terminal_height:
+        print("Scale height")
+        tile_width = math.floor(image_width / terminal_width)
+        tile_height = math.floor(tile_width / FONT_RATIO / image_ratio)
     else:
-        tile_width = max_tile_width
-        tile_height = max_tile_width / FONT_RATIO
-        vertical_margin = terminal_height - (tile_height / 8)
+        print("Scale width")
+        tile_height = math.floor(image_height / terminal_height)
+        tile_width = int(tile_height * image_ratio)
 
-    for row in range(terminal_height):
+    print(max_tile_width, max_tile_height)
+    #
+    # if max_tile_width > max_tile_height:
+    #     print("Adapt to vert")
+    #     tile_height = max_tile_height
+    #     tile_width = max_tile_height * FONT_RATIO
+    # else:
+    #     print("Adapt to hrz")
+    #     tile_width = max_tile_width
+    #     tile_height = max_tile_width / FONT_RATIO
+
+    image_row_count = math.floor(image_height / tile_height)
+    image_col_count = math.floor(image_width / tile_width)
+
+    while image_row_count >= terminal_height:
+        tile_height += 1
+        image_row_count = math.floor(image_height / tile_height)
+
+    while image_col_count >= terminal_width:
+        tile_width += 1
+        image_col_count = math.floor(image_width / tile_width)
+
+    vertical_margin = terminal_height - image_row_count
+    horizontal_margin = terminal_width - image_col_count
+
+    for i in range(vertical_margin // 2):
+        print("")  # Add empty line to vertically center the image
+
+    for row in range(image_row_count):
         y1 = row * tile_height
 
-        if row == terminal_height - 1:
+        if row == image_row_count - 1:
             y2 = image_height
         else:
             y2 = (row + 1) * tile_height
 
-        for col in range(terminal_width):
+        for i in range(horizontal_margin // 2):
+            print(" ", end='')
+
+        for col in range(image_col_count):
             x1 = col * tile_width
 
-            if col == terminal_width - 1:
+            if col == image_col_count - 1:
                 x2 = image_width
             else:
                 x2 = (col + 1) * tile_width
@@ -123,6 +153,9 @@ def main():
             print_tile(tile)
 
         print("")
+
+    for i in range(vertical_margin // 2):
+        print("")  # Add empty line to vertically center the image
 
 
 if __name__ == '__main__':
