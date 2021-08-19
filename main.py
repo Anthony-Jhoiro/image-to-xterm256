@@ -1,3 +1,7 @@
+"""
+:author Anthony Quéré (Anthony-Jhoiro)
+"""
+
 import sys
 from PIL import Image
 import os
@@ -18,6 +22,17 @@ COLORS_STEPS = [
 
 
 def round_tint(tint: int):
+    """
+    Round an RGB tint  to correspond to a xterm256 "tint". The xterm256 colors are numbers (from 0 to 255) . We remove
+    the first 24 because they are just default colors and can be changed from a terminal to an other and the last 10
+    because they are for grayscale and we support it with the characters instead. We have left 6^3 colors that can be
+    translate to RGB colors. (I used this website for reference : https://jonasjacek.github.io/colors/) Here we can see
+    that each  rgb tint can have defined values : 0, 95, 135, 175, 215 and 255. We need to round the tint to the closest
+    one. and return its indices. By default the function returns 0.
+
+    :param tint: tint to round
+    :return: The indices of the rounded tint or 0 if not in the [[0; 255]] interval.
+    """
     m = 0
     for step_low, step_max in COLORS_STEPS:
         if step_low <= tint <= step_max:
@@ -27,6 +42,14 @@ def round_tint(tint: int):
 
 
 def get_xterm_color(r, g, b):
+    """
+    Get the xterm256 color closest to the given rgb color. Use the `round_tint` function to convert each tints. See the
+    `round_tint` documentation. Th returned number can be used as a xterm256 color code, it will be between 16 and 231.
+    :param r: RGB red tint
+    :param g: RGB green tint
+    :param b: RGB blue tint
+    :return:
+    """
     rr = round_tint(r)
     rg = round_tint(g)
     rb = round_tint(b)
@@ -35,6 +58,12 @@ def get_xterm_color(r, g, b):
 
 
 def get_char_from_light(light: int):
+    """
+    Get a character from the grayscale character list that match the light value. The light value must be between 0 and
+    255.
+    :param light: int representing a light level (between 0 and 255)
+    :return: a character that match the light level
+    """
     index = int((light * (ASCII_SCALE_SIZE - 1)) / 255)
     return ASCII_SCALE[index]
 
@@ -62,7 +91,6 @@ def print_tile(tile: Image.Image):
     color = get_xterm_color(r, g, b)
 
     print("\u001b[38;5;" + str(color) + "m" + char, end="\033[0m")
-    # print("\u001b[38;5;" + str(color) + "m ", end="")
 
 
 def get_terminal_sizes():
