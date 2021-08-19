@@ -39,12 +39,10 @@ def get_char_from_light(light: int):
     return ASCII_SCALE[index]
 
 
-
-def print_tile(tile: Image):
+def print_tile(tile: Image.Image):
     """
-   Given PIL Image, return average value of grayscale value
-   """
-    # get image as numpy array
+    Given PIL Image, return average value of grayscale value
+    """
     width, height = tile.size
 
     pixels = tile.getcolors(width * height)
@@ -63,7 +61,7 @@ def print_tile(tile: Image):
 
     color = get_xterm_color(r, g, b)
 
-    print("\u001b[38;5;" + str(color) + "m" + char, end="")
+    print("\u001b[38;5;" + str(color) + "m" + char, end="\033[0m")
     # print("\u001b[38;5;" + str(color) + "m ", end="")
 
 
@@ -71,6 +69,22 @@ def get_terminal_sizes():
     columns, lines = os.get_terminal_size()
     return lines, columns, columns / lines
 
+
+def print_vertical_margin(size: int):
+    for i in range(size):
+        print("")
+
+
+def print_top_border(content_width: int):
+    print("+", end="")
+    for i in range(content_width):
+        print("-", end="")
+    print("+")
+
+
+def print_horizontal_margin(size: int):
+    for i in range(size):
+        print("", end="")
 
 
 def main():
@@ -87,47 +101,35 @@ def main():
 
     terminal_height, terminal_width, terminal_ratio = get_terminal_sizes()
 
-    print(terminal_width, terminal_height)
+    grid_height = terminal_height - 2
+    grid_width = terminal_width - 2
 
-    max_tile_width = math.floor(image_width / terminal_width)
-    max_tile_height = math.floor(image_height / terminal_height)
-
-    if terminal_width * FONT_RATIO / image_ratio < terminal_height:
-        print("Scale height")
-        tile_width = math.floor(image_width / terminal_width)
+    if grid_width * FONT_RATIO / image_ratio < grid_height:
+        tile_width = math.floor(image_width / grid_width)
         tile_height = math.floor(tile_width / FONT_RATIO / image_ratio)
     else:
-        print("Scale width")
-        tile_height = math.floor(image_height / terminal_height)
+        tile_height = math.floor(image_height / grid_height)
         tile_width = int(tile_height * image_ratio)
-
-    print(max_tile_width, max_tile_height)
-    #
-    # if max_tile_width > max_tile_height:
-    #     print("Adapt to vert")
-    #     tile_height = max_tile_height
-    #     tile_width = max_tile_height * FONT_RATIO
-    # else:
-    #     print("Adapt to hrz")
-    #     tile_width = max_tile_width
-    #     tile_height = max_tile_width / FONT_RATIO
 
     image_row_count = math.floor(image_height / tile_height)
     image_col_count = math.floor(image_width / tile_width)
 
-    while image_row_count >= terminal_height:
+    while image_row_count >= grid_height:
         tile_height += 1
         image_row_count = math.floor(image_height / tile_height)
 
-    while image_col_count >= terminal_width:
+    while image_col_count >= grid_width:
         tile_width += 1
         image_col_count = math.floor(image_width / tile_width)
 
-    vertical_margin = terminal_height - image_row_count
-    horizontal_margin = terminal_width - image_col_count
+    vertical_margin = grid_height - image_row_count
+    horizontal_margin = grid_width - image_col_count
 
-    for i in range(vertical_margin // 2):
-        print("")  # Add empty line to vertically center the image
+    print_vertical_margin(vertical_margin // 2)
+
+    print_horizontal_margin(horizontal_margin // 2)
+
+    print_top_border(image_col_count)
 
     for row in range(image_row_count):
         y1 = row * tile_height
@@ -137,25 +139,25 @@ def main():
         else:
             y2 = (row + 1) * tile_height
 
-        for i in range(horizontal_margin // 2):
-            print(" ", end='')
+        print_horizontal_margin(horizontal_margin // 2)
+        print("|", end="")
 
         for col in range(image_col_count):
             x1 = col * tile_width
 
-            if col == image_col_count - 1:
-                x2 = image_width
-            else:
-                x2 = (col + 1) * tile_width
+            x2 = image_width if col == image_col_count - 1 else (col + 1) * tile_width
 
             tile = image.crop((x1, y1, x2, y2))
 
             print_tile(tile)
 
-        print("")
+        print("|")
 
-    for i in range(vertical_margin // 2):
-        print("")  # Add empty line to vertically center the image
+    print_horizontal_margin(horizontal_margin // 2)
+
+    print_top_border(image_col_count)
+
+    print_vertical_margin(vertical_margin // 2)
 
 
 if __name__ == '__main__':
